@@ -1,4 +1,4 @@
-name: Build Android APK (Unlimited)
+name: "Build Android APK (Unlimited)"
 
 on:
   workflow_dispatch:
@@ -6,13 +6,14 @@ on:
     branches:
       - master
       - main
+      - unlimited-apk
     paths:
       - 'src/**'
-      - '.github/workflows/build-android-apk.yml'
+      - '.github/workflows/android-unlimited.yml'
 
 jobs:
   build-apk:
-    name: Build Unlimited Android APK (Universal)
+    name: "Build Unlimited Android APK (Universal)"
     runs-on: ubuntu-22.04
 
     steps:
@@ -95,14 +96,15 @@ jobs:
       - name: Generate clean secrets (without LICENSE definition)
         run: |
           cd src
-          echo "#define STRAVA_SECRET_KEY \"${{ secrets.strava_secret_key }}\"" > secret.h
-          echo "#define PELOTON_SECRET_KEY \"${{ secrets.peloton_secret_key }}\"" >> secret.h
-          echo "#define SMTP_USERNAME \"${{ secrets.smtp_username }}\"" >> secret.h
-          echo "#define SMTP_PASSWORD \"${{ secrets.smtp_password }}\"" >> secret.h
-          echo "#define SMTP_SERVER \"${{ secrets.smtp_server }}\"" >> secret.h
-          echo "#define INTERVALSICU_CLIENT_ID \"${{ secrets.intervalsicu_client_id }}\"" >> secret.h
-          echo "#define INTERVALSICU_CLIENT_SECRET \"${{ secrets.intervalsicu_client_secret }}\"" >> secret.h
-          echo "" >> inner_templates/googlemaps/cesium-key.js
+          touch secret.h
+          echo '#define STRAVA_SECRET_KEY ""' >> secret.h
+          echo '#define PELOTON_SECRET_KEY ""' >> secret.h
+          echo '#define SMTP_USERNAME ""' >> secret.h
+          echo '#define SMTP_PASSWORD ""' >> secret.h
+          echo '#define SMTP_SERVER ""' >> secret.h
+          echo '#define INTERVALSICU_CLIENT_ID ""' >> secret.h
+          echo '#define INTERVALSICU_CLIENT_SECRET ""' >> secret.h
+          touch inner_templates/googlemaps/cesium-key.js
 
       - name: Build qthttpserver for Android
         run: |
@@ -111,7 +113,7 @@ jobs:
           make -j$(nproc)
           make install
 
-      - name: Build QZ for Android (ABIs: armeabi-v7a for Android 9, arm64-v8a for Pixel 10)
+      - name: "Build QZ for Android (ABIs: armeabi-v7a for Android 9, arm64-v8a for Pixel 10)"
         run: |
           lrelease src/qdomyos-zwift.pri
           qmake -spec android-clang 'ANDROID_ABIS=armeabi-v7a arm64-v8a x86 x86_64' 'ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/21.1.6352462' 'CONFIG+=debug'
