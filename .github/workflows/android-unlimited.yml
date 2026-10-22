@@ -13,7 +13,7 @@ on:
 
 jobs:
   build-apk:
-    name: "Build Unlimited Android APK (Universal)"
+    name: "Build Unlimited APKs (Echelon EX-4S Android 9 & Pixel 10)"
     runs-on: ubuntu-22.04
 
     steps:
@@ -113,21 +113,34 @@ jobs:
           make -j$(nproc)
           make install
 
-      - name: "Build QZ for Android (ABIs: armeabi-v7a for Android 9, arm64-v8a for Pixel 10)"
+      - name: "Build QZ for Android (armeabi-v7a for EX-4S Android 9, arm64-v8a for Pixel 10)"
         run: |
           lrelease src/qdomyos-zwift.pri
-          qmake -spec android-clang 'ANDROID_ABIS=armeabi-v7a arm64-v8a x86 x86_64' 'ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/21.1.6352462' 'CONFIG+=debug'
+          # Chỉ build 2 kiến trúc máy thật (armeabi-v7a và arm64-v8a), bỏ x86/x86_64
+          qmake -spec android-clang 'ANDROID_ABIS=armeabi-v7a arm64-v8a' 'ANDROID_NDK_ROOT=/usr/local/lib/android/sdk/ndk/21.1.6352462' 'CONFIG+=debug'
           make qmake_all
-          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+          for abi in armeabi-v7a arm64-v8a; do
             make -j$(nproc) -C src -f Makefile.qdomyos-zwift "$abi-all"
           done
           make -j$(nproc) && make INSTALL_ROOT=${{ github.workspace }}/output/android/ install
 
-      - name: Assemble Android APK with Gradle
+      - name: Strip debug symbols to reduce APK size
+        run: |
+          STRIP_TOOL="/usr/local/lib/android/sdk/ndk/21.1.6352462/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip"
+          echo "Stripping debug symbols from shared libraries..."
+          find ${{ github.workspace }}/output/android/libs/ -name "*.so" -exec $STRIP_TOOL --strip-unneeded {} +
+          echo "Strip completed. Library sizes:"
+          ls -lh ${{ github.workspace }}/output/android/libs/*/*.so
+
+      - name: Assemble Separate Android APKs with Gradle
         run: |
           cd src
           mkdir -p ${{ github.workspace }}/output/android
           rsync -a --exclude build --exclude .gradle android/ ${{ github.workspace }}/output/android/
+
+          # Bật cấu hình tách file APK riêng biệt cho từng ABI
+          sed -i '/android {/a \    splits {\n        abi {\n            enable true\n            reset()\n            include "armeabi-v7a", "arm64-v8a"\n            universalApk false\n        }\n    }' ${{ github.workspace }}/output/android/build.gradle
+
           androiddeployqt --input android-qdomyos-zwift-deployment-settings.json --output ${{ github.workspace }}/output/android/ --android-platform android-35 --gradle --aux-mode
           export GRADLE_USER_HOME="${{ github.workspace }}/.gradle-android"
           export GRADLE_OPTS="-Dgradle.user.home=$GRADLE_USER_HOME"
@@ -143,10 +156,26 @@ jobs:
             unzip -q /tmp/gradle-8.13-bin.zip -d ${{ github.workspace }}
           fi
           "$GRADLE_DIST_DIR/bin/gradle" -g "$GRADLE_USER_HOME" --no-daemon -p ${{ github.workspace }}/output/android assembleDebug
-          mv ${{ github.workspace }}/output/android/build/outputs/apk/debug/android-debug.apk ${{ github.workspace }}/output/android/build/outputs/apk/debug/qz-unlimited.apk
 
-      - name: Upload Unlimited APK Artifact
+          echo "Generated APK files in output directory:"
+          find ${{ github.workspace }}/output/android/build/outputs/apk/debug/ -type f -name "*.apk" -exec ls -lh {} +
+
+          mkdir -p ${{ github.workspace }}/dist_apks
+          # Đổi tên và chuẩn bị 2 file APK rõ ràng
+          cp $(find ${{ github.workspace }}/output/android/build/outputs/apk/debug/ -name "*armeabi-v7a*.apk" | head -n 1) ${{ github.workspace }}/dist_apks/qz-echelon-ex4s-android9.apk
+          cp $(find ${{ github.workspace }}/output/android/build/outputs/apk/debug/ -name "*arm64-v8a*.apk" | head -n 1) ${{ github.workspace }}/dist_apks/qz-pixel10-arm64.apk
+
+          echo "Final separate APKs:"
+          ls -lh ${{ github.workspace }}/dist_apks/
+
+      - name: Upload Echelon EX-4S Android 9 APK
         uses: actions/upload-artifact@v4
         with:
-          name: QZ-Unlimited-Universal-APK
-          path: ${{ github.workspace }}/output/android/build/outputs/apk/debug/qz-unlimited.apk
+          name: QZ-Echelon-EX4S-Android9-APK
+          path: ${{ github.workspace }}/dist_apks/qz-echelon-ex4s-android9.apk
+
+      - name: Upload Pixel 10 ARM64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: QZ-Pixel10-ARM64-APK
+          path: ${{ github.workspace }}/dist_apks/qz-pixel10-arm64.apk
