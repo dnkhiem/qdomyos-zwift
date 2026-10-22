@@ -774,9 +774,10 @@ ApplicationWindow {
     Popup {
         id: popupLicense
          parent: Overlay.overlay
-         enabled: rootItem.licensePopupVisible
-         onEnabledChanged: { if(rootItem.licensePopupVisible) popupLicense.open() }
-         onClosed: { Qt.openUrlExternally("https://www.patreon.com/bePatron?u=45290147"); Qt.callLater(Qt.quit); }
+         enabled: false
+         visible: false
+         onEnabledChanged: { }
+         onClosed: { }
 
          x: Math.round((parent.width - width) / 2)
          y: Math.round((parent.height - height) / 2)

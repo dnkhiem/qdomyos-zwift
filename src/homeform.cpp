@@ -884,7 +884,7 @@ homeform::homeform(QQmlApplicationEngine *engine, bluetooth *bl) {
     stravaWorkoutName = QLatin1String("");
     movieFileName = QUrl("");
 
-#if defined(Q_OS_WIN) || (defined(Q_OS_MAC) && !defined(Q_OS_IOS)) || (defined(Q_OS_ANDROID) && defined(LICENSE))
+#if (defined(Q_OS_WIN) || (defined(Q_OS_MAC) && !defined(Q_OS_IOS))) && !defined(Q_OS_ANDROID)
 #ifndef STEAM_STORE
     connect(engine, &QQmlApplicationEngine::quit, &QGuiApplication::quit);
     connect(&tLicense, &QTimer::timeout, this, &homeform::licenseTimeout);
@@ -11827,7 +11827,9 @@ void homeform::licenseRequest() {
     });
 }
 
-void homeform::licenseTimeout() { setLicensePopupVisible(true); }
+void homeform::licenseTimeout() {
+    // Disabled: unlimited build without 10-minute trial expiration
+}
 #endif
 
 void homeform::changeTimestamp(QTime source, QTime actual) {
