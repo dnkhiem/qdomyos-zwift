@@ -1143,10 +1143,10 @@ ApplicationWindow {
         ToolButton {
             id: toolButton
             icon.source: "icons/icons/icon.png"
-            icon.width: 48
-            icon.height: 48
+            icon.width: 96
+            icon.height: 96
             text: stackView.depth > 1 ? "◄" : "◄"
-            font.pixelSize: Qt.application.font.pixelSize * 3.2
+            font.pixelSize: Qt.application.font.pixelSize * 6.4
             onClicked: {
                 if (stackView.depth > 1) {
                     // Back to the settings search results after one of them was opened, as the
@@ -1161,8 +1161,8 @@ ApplicationWindow {
         ToolButton {
             id: toolButtonFloating
             icon.source: "icons/icons/mini-display.png"
-            icon.width: 48
-            icon.height: 48
+            icon.width: 96
+            icon.height: 96
             height: toolButton.height
             onClicked: { console.log("floating!"); floatingOpen(); }
             anchors.left: toolButton.right
